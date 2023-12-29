@@ -1,0 +1,84 @@
+{%extends 'main.html' %}
+
+
+{%block title %} DZ-Mouhami - Annuaire des Avocats Algériens {%endblock title%}
+
+{%block content %}
+
+    <section class="welcome-section">
+        <h1>Bienvenue sur DZ-Mouhami</h1>
+        <p>Votre guide pour trouver des avocats qualifiés en Algérie.</p>
+         <div style="margin-bottom: 15px;">
+            <a href="{% url 'createAvovatProfile' %}" style="height: 50px; width:max-content ; background:red ; border-radius:5%">Create Avocat Profile</a> 
+         </div>
+         <style>
+            form {
+                
+                width: 80%; /* Adjust width as needed */
+                margin: 0 auto; /* Center the form */
+                padding: 20px;
+                border: 1px solid #ccc;
+                border-radius: 5px;
+                display: flex;
+
+                flex-direction: row;
+              }
+              
+              label {
+                display: block;
+                
+                margin-bottom: 5px;
+              }
+              
+              input[type="text"],
+              button {
+                width: 100%;
+                padding: 10px;
+                border: 1px solid #ccc;
+                border-radius: 3px;
+                margin-bottom: 10px;
+              }
+              
+              button {
+                background-color: #4CAF50;
+                color: white;
+                cursor: pointer;
+              }
+         </style>
+         <form action="{% url 'home' %}" method="get">
+            <label for="name">Name:</label>
+            <input type="text" id="name" name="name" value="{{ request.GET.name }}">
+        
+            <label for="specialite">Specialization:</label>
+            <input type="text" id="specialite" name="specialite" value="{{ request.GET.specialite }}">
+        
+            <label for="location">Location:</label>
+            <input type="text" id="location" name="location" value="{{ request.GET.location }}">
+        
+            <button type="submit">Search</button>
+        </form>
+        
+          
+    </section>
+    <section class="lawyer-profiles">
+        <h2>Avocats en Vedette</h2>
+
+        <div class="profiles-container">
+            <!-- Profil Avocat 1 -->
+            {%for avocat in avocats%}
+            <div class="profile-card">
+                <img src="avatar.webp" alt="{{avocat.firstName}}">
+                <h3>{{avocat.firstName}}{{avocat.lastName}}</h3>
+                <p>Spécialité: {%for spec in avocat.specialitees.all %} {{spec.title}} {%endfor%} </p>
+                <p>Expérience: {{avocat.experienceWork}}</p>
+                <p>Langues: {%for langue in avocat.langues.all %} {{langue.langue}} {%endfor%} </p>
+                <div class="rating">
+                    <span>Évaluation: ★★★★☆</span>
+                </div>
+                <a href="{% url 'profile' avocat.id %}" class="profile-link">Voir Profil</a>
+                <a href="#" class="appointment-link">Prendre Rendez-vous</a>
+            </div>       
+            {%endfor%}    
+        </div>
+    </section>
+{%endblock content %}
