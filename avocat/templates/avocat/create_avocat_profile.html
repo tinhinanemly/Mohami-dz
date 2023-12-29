@@ -1,0 +1,13 @@
+{%extends 'main.html'%}
+{%block title %}
+create Profile
+{%endblock title%}
+{%block content %}
+<div>
+<form action="" method="post">
+    {%csrf_token%}
+    {{form.as_p}}
+    <input type="submit" value={{action}}>
+</form>
+</div>
+{%endblock content%}

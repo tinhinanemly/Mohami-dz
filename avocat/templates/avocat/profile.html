@@ -1,0 +1,179 @@
+{%extends 'main.html'%}
+{%block style%}
+
+<style>
+    
+section {
+    max-width: 800px;
+    margin: 20px auto;
+    padding: 20px;
+    background-color: #fff;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+h2 {
+    color: #333;
+}
+
+.profile-info {
+    display: flex;
+    justify-content: space-between;
+}
+
+.profile-info img {
+    border-radius: 50%;
+    max-width: 150px;
+}
+
+.profile-details {
+    margin-left: 20px;
+}
+
+.specialties {
+    margin-top: 10px;
+}
+
+.languages {
+    margin-top: 10px;
+}
+
+.experiences {
+    margin-top: 20px;
+}
+.posts {
+    margin-top: 20px;
+}
+
+.post {
+    border: 1px solid #ccc;
+    padding: 10px;
+    margin-bottom: 20px;
+    background-color: #fff;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+}
+
+.post h3 {
+    color: #333;
+}
+
+.post p {
+    color: #555;
+}
+
+.post-date {
+    display: block;
+    margin-top: 10px;
+    color: #888;
+}
+.comments {
+    margin-top: 20px;
+}
+
+.comment {
+    display: flex;
+    margin-bottom: 20px;
+}
+
+.comment img {
+    border-radius: 50%;
+    max-width: 50px;
+    margin-right: 10px;
+}
+
+.comment-content {
+    flex-grow: 1;
+}
+
+.comment h3 {
+    color: #333;
+}
+
+.comment p {
+    color: #555;
+}
+
+.comment-date {
+    display: block;
+    margin-top: 5px;
+    color: #888;
+}
+</style>
+{%endblock style%}
+{%block title %}
+{{avocat.firstName}}
+{{avocat.lastName}}
+{%endblock title%}
+{%block content %}
+
+    <section>
+        <div class="profile-info">
+            <img src="path/to/avocat/profile/image.jpg" alt="Avocat Image">
+            <div class="profile-details">
+                <h2>{{avocat.firstName}} {{avocat.lastName}}</h2>
+                <p>Address: {{avocat.adresse}}</p>
+                <p>Email: {{avocat.coordonnees.email}}</p>
+                {%for phone in phone_numbers%}
+                <p>Phone: {{phone}}</p>
+                {%endfor%}
+            {%if request.user == avocat.user %}
+             <a href="{% url 'updateAvocatProfile' avocat.id %}" style="height: 100%; width:max-content ; background:rgb(239, 89, 89) ; border-radius:5%">Update Avocat Profile</a> 
+             <a href="{% url 'delete' avocat.id %}" style="height: 100%; width:max-content ; background:rgb(239, 89, 89) ; border-radius:5%">Delete</a> 
+            {%endif%}
+            </div>
+
+        </div>
+
+        <div class="specialties">
+            <h2>Specialties</h2>
+            <ul>
+                {%for specialitee in specialitees%}
+                <li>{{specialitee.title}}</li>
+                
+                {%endfor%}
+               
+            </ul>
+        </div>
+
+        <div class="languages">
+            <h2>Languages</h2>
+            <ul>
+                {%for langue in langues%}
+                <li>{{langue}}</li>
+                {%endfor%}
+            </ul>
+        </div>
+
+        <div class="experiences">
+            <h2>Experiences</h2>
+            <p>Description of experience 1.</p>
+            <p>Description of experience 2.</p>
+            <!-- Add more experiences as needed -->
+        </div>
+    </section>
+    <section class="posts">
+        <h2>Posts</h2>
+        {%for post in posts%}
+        <div class="post">
+            <h3>{{post.title}}</h3>
+            <p>{{post.content}}</p>
+            <span class="post-date">Published on: {{post.dateTimePub}}</span>
+        </div>
+
+     {%endfor%}
+    </section>
+   
+    <section class="comments">
+        <h2>Comments</h2>
+        {%for comment in comments%}
+        <div class="comment">
+            <img src="path/to/commenter/avatar.jpg" alt="Commenter Avatar">
+            <div class="comment-content">
+                <h3>{{comment.host.firstName}} {{comment.host.lastName}}</h3>
+                <p>{{comment.content}}</p>
+                <span class="comment-date">Posted on: {{comment.dateTimePub}}</span>
+            </div>
+        </div>
+        {%endfor%}
+        </div>
+    </section>
+{% endblock content %}
