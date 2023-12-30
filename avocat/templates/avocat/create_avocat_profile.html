@@ -112,6 +112,38 @@
          border-color: #4285f4;
          outline: 0;
          box-shadow: 0 0 0 0.2rem rgba(66, 133, 244, 0.25);}
+         .phone-number-input-wrapper {
+            display: flex;
+            flex-direction: row;
+            margin-bottom: 8px;
+        }
+    
+        .phone-number-input {
+            flex: 1;
+            margin-right: 8px;
+            padding: 8px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+        }
+    
+        .remove-phone-number {
+            background-color: #dc3545;
+            color: #fff;
+            border: none;
+            padding: 5px;
+
+            border-radius: 4px;
+            cursor: pointer;
+        }
+    
+        .add-phone-number {
+            background-color: #4285f4;
+            color: #fff;
+            border: none;
+            padding: 8px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
 </style>
 {% endblock style %}
 
@@ -143,17 +175,20 @@ Create Profile
             </div>
 
             <div class="mb-3">
-    <label for="email" class="form-label">Email</label>
-    <input type="email" name="email" id="email">
-</div>
-
-<div class="mb-3" id="phoneNumbersContainer">
-    <label for="phoneNumber" class="form-label">Phone Numbers</label>
-    <div id="phoneNumbersWrapper">
-        <input type="tel" name="phoneNumbers[]" class="phone-number-input" required>
-    </div>
-    <button type="button" id="addPhoneNumber">Add Phone Number</button>
-</div>
+                <label for="email" class="form-label">Email</label>
+                <input type="email" name="email" id="email">
+            </div>
+            
+            <div class="mb-3" id="phoneNumbersContainer">
+                <label for="phoneNumber" class="form-label">Phone Numbers</label>
+                <div id="phoneNumbersWrapper">
+                    <div class="phone-number-input-wrapper">
+                        <input type="tel" name="phoneNumbers[]" class="phone-number-input" required>
+                        <!-- <button type="button" class="remove-phone-number">X</button> -->
+                    </div>
+                </div>
+                <button type="button" id="addPhoneNumber" class="add-phone-number">Add Phone Number</button>
+            </div>
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
@@ -170,7 +205,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
         const removeButton = document.createElement('button');
         removeButton.type = 'button';
-        removeButton.innerText = 'Remove';
+        removeButton.innerText = 'X';
+        removeButton.className = 'remove-phone-number';
         removeButton.addEventListener('click', function () {
             phoneNumbersWrapper.removeChild(newInput);
             phoneNumbersWrapper.removeChild(removeButton);

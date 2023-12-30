@@ -8,55 +8,49 @@
     <section class="welcome-section">
         <h1>Bienvenue sur DZ-Mouhami</h1>
         <p>Votre guide pour trouver des avocats qualifiés en Algérie.</p>
-         <div style="margin-bottom: 15px;">
-            <a href="{% url 'createAvovatProfile' %}" style="height: 50px; width:max-content ; background:red ; border-radius:5%">Create Avocat Profile</a> 
-         </div>
+        <div style="margin-bottom: 15px; text-align: center;">
+          <a href="{% url 'createAvovatProfile' %}" style="display: inline-block; padding: 15px 30px; background-color: #007bff; color: #fff; text-decoration: none; font-size: 18px; font-weight: bold; border-radius: 8px; transition: background-color 0.3s ease;">
+              Create Avocat Profile
+          </a>
+      </div>
+      
          <style>
             form {
                 
                 width: 80%; /* Adjust width as needed */
-                margin: 0 auto; /* Center the form */
+                margin: 40px auto 20px auto  ; /* Center the form */
                 padding: 20px;
                 border: 1px solid #ccc;
                 border-radius: 5px;
                 display: flex;
-
                 flex-direction: row;
               }
               
-              label {
-                display: block;
-                
-                margin-bottom: 5px;
-              }
-              
-              input[type="text"],
-              button {
-                width: 100%;
-                padding: 10px;
-                border: 1px solid #ccc;
-                border-radius: 3px;
-                margin-bottom: 10px;
-              }
-              
-              button {
-                background-color: #4CAF50;
-                color: white;
-                cursor: pointer;
-              }
+
          </style>
-         <form action="{% url 'home' %}" method="get">
-            <label for="name">Name:</label>
-            <input type="text" id="name" name="name" value="{{ request.GET.name }}">
-        
-            <label for="specialite">Specialization:</label>
-            <input type="text" id="specialite" name="specialite" value="{{ request.GET.specialite }}">
-        
-            <label for="location">Location:</label>
-            <input type="text" id="location" name="location" value="{{ request.GET.location }}">
-        
-            <button type="submit">Search</button>
-        </form>
+         <form action="{% url 'home' %}" method="get" style=" text-align: center;">
+          <div style="display: flex; gap: 15px; justify-content: center; flex-direction:row;">
+              <div style="display: flex; gap: 15px; align-items: center;">
+                  <label for="name" style="font-weight: bold;">Name:</label>
+                  <input type="text" id="name" name="name" value="{{ request.GET.name }}" style="padding: 10px; border: 1px solid #ccc; border-radius: 5px;">
+              </div>
+      
+              <div style="display: flex; gap: 15px; align-items: center;">
+                  <label for="specialite" style="font-weight: bold;">Specialization:</label>
+                  <input type="text" id="specialite" name="specialite" value="{{ request.GET.specialite }}" style="padding: 10px; border: 1px solid #ccc; border-radius: 5px;">
+              </div>
+      
+              <div style="display: flex; gap: 15px; align-items: center;">
+                  <label for="location" style="font-weight: bold;">Location:</label>
+                  <input type="text" id="location" name="location" value="{{ request.GET.location }}" style="padding: 10px; border: 1px solid #ccc; border-radius: 5px;">
+              </div>
+      
+              <div style="width: 20%; text-align: center;">
+                  <button type="submit" style="padding: 12px; background-color: #007bff; color: #fff; border: none; border-radius: 5px; cursor: pointer;">Search</button>
+              </div>
+          </div>
+      </form>
+      
         
           
     </section>
