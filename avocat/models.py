@@ -45,11 +45,9 @@ class Avocat(models.Model):
     langues = models.ManyToManyField(Langues, blank=True)
     dateWork = models.DateField()
     timeWork = models.TimeField()
-    evaluationStar = models.IntegerField()
-    
+    evaluationStar = models.IntegerField(null=True)
     def __str__(self):
         return self.firstName
-    
     class Meta:
         db_table = 'avocat'
 

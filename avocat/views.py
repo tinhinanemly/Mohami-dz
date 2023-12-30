@@ -61,20 +61,6 @@ def loginPage(request):
     return render(request,'avocat/login.html')
 
 
-from django.shortcuts import render, redirect
-from django.contrib.auth import login
-from django.contrib.auth.models import User
-from django.contrib import messages
-
-def get_app(self, request, sociallogin):
-    app = sociallogin.app
-    print(f"Social app: {app}")
-    # rest of the function
-def login_page(request):
-    sociallogin = request.socialaccount.sociallogin
-    print(f"Social login object: {sociallogin}")
-    # rest of the view code
-
 def signup(request):
     if request.method == 'POST':
         username = request.POST.get('username').lower()
@@ -122,19 +108,56 @@ def profile(request,pk):
      }
     return render(request,'avocat/profile.html',context)
 @login_required(login_url='login')
+
+
 def createAvocatProfile(request):
-    form = AvocatForm()
     if request.method == 'POST':
-        form = AvocatForm(request.POST)
-        if form.is_valid():
-            form.save()
-            return redirect('home')
-    context = {
-        'action':"CREATE" , 
-        'form':form  
+        first_name = request.POST.get('firstName')
+        last_name = request.POST.get('lastName')
+        adresse = request.POST.get('adresse')
+        email = request.POST.get('email')
+        phone_number = request.POST.get('phoneNumber')
+        experience_work = request.POST.get('experienceWork')
+        date_work = request.POST.get('dateWork')
+        time_work = request.POST.get('timeWork')
+
+        # Process checkboxes for specialities and languages
+        specialities = [key for key in request.POST.keys() if key in [sp.title for sp in Specialite.objects.all()]]
+        languages = [key for key in request.POST.keys() if key in [lan.langue for lan in Langues.objects.all()]]
+
+        # Create and save the Avocat instance
+        user = request.user  # Assuming you have a valid User instance in the request
+        coordonnees = Coordonnees.objects.create(email=email)  # Assuming you want to create a new Coordonnees instance
+        phone_numbers = request.POST.getlist('phoneNumbers[]')
+        # Create PhoneNumbers instances for each phone number
+        for phone_number in phone_numbers:
+            PhoneNumbers.objects.create(phoneNumber=phone_number, coordonnees=coordonnees)
         
+        avocat_instance = Avocat.objects.create(
+            user=user,
+            firstName=first_name,
+            lastName=last_name,
+            adresse=adresse,
+            coordonnees=coordonnees,
+            experienceWork=experience_work,
+            dateWork=date_work,
+            timeWork=time_work,
+            evaluationStar=None  # You might want to adjust this depending on your requirements
+        )
+        avocat_instance.specialitees.set(Specialite.objects.filter(title__in=specialities))
+        avocat_instance.langues.set(Langues.objects.filter(langue__in=languages))
+
+        return redirect('home')  # Redirect to the home page or any other desired page
+
+    langues = Langues.objects.all()
+    specialites = Specialite.objects.all()
+    context = {
+        'action': "CREATE",
+        "langues": langues,
+        'specialites': specialites,
     }
-    return render(request,'avocat/create_avocat_profile.html', context)
+    return render(request, 'avocat/create_avocat_profile.html', context)
+
 
 
 def updateAvocatProfile(request,pk):
