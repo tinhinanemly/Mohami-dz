@@ -46,6 +46,8 @@ class Avocat(models.Model):
     dateWork = models.DateField()
     timeWork = models.TimeField()
     evaluationStar = models.IntegerField(null=True)
+    photo = models.ImageField( null=True, blank=True , default='avatar.png')  # Add this line for the photo
+
     def __str__(self):
         return self.firstName
     class Meta:
@@ -62,7 +64,7 @@ class AvocatSpecialitePrice(models.Model):
 
 class PhoneNumbers(models.Model):
     phoneNumber = models.CharField(max_length=20)
-    coordonnees = models.ForeignKey(Coordonnees, on_delete=models.CASCADE)
+    coordonnees = models.ForeignKey(Coordonnees,related_name='phonenumbers', on_delete=models.CASCADE)
     def __str__(self):
         return self.phoneNumber
     class Meta:
@@ -70,10 +72,10 @@ class PhoneNumbers(models.Model):
 
 class Post(models.Model):
     host = models.ForeignKey(Avocat, on_delete=models.CASCADE)
-    dateTimePub = models.DateTimeField()
+    dateTimePub = models.DateTimeField(auto_now_add=True)
     title = models.CharField(max_length=300)
     content = models.TextField(null=True)
-    created = models.DateTimeField(auto_now_add=True)
+
     
     def __str__(self):
         return self.title
@@ -93,7 +95,8 @@ class Files(models.Model):
 class Visitor(models.Model):
     user = models.OneToOneField(User,on_delete=models.CASCADE)
     firstName = models.CharField(max_length=20)
-    lastName = models.CharField(max_length=20)
+    lastName = models.CharField(max_length=20,null=True)
+    photo = models.ImageField( null=True, blank=True , default='visitor.png' )
     def __str__(self):
         return self.firstName
     class Meta:
@@ -118,9 +121,9 @@ class RendezVous(models.Model):
 class Comment(models.Model):
     avocat = models.ForeignKey(Avocat , on_delete = models.CASCADE)
     host = models.ForeignKey(Visitor, on_delete=models.CASCADE)
-    dateTimePub = models.DateTimeField()
+    dateTimePub = models.DateTimeField(auto_now_add=True)
     content = models.TextField()
-    created = models.DateTimeField(auto_now_add=True)
+
     def __str__(self):
         return self.content[:30]
     class Meta:

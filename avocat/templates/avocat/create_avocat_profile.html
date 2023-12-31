@@ -108,7 +108,8 @@
     input[type="email"]:focus,
     input[type="tel"]:focus,
     input[type="date"]:focus,
-    input[type="time"]:focus {
+    input[type="time"]:focus, 
+    input[type="image"]:focus {
          border-color: #4285f4;
          outline: 0;
          box-shadow: 0 0 0 0.2rem rgba(66, 133, 244, 0.25);}
@@ -156,89 +157,99 @@ Create Profile
 <div class="container mt-5">
     <div class="form-box">
         <h2 class="mb-4">{{ action }} Lawyer Profile</h2>
-        <form action="" method="post">
+        <form action="" method="post" enctype="multipart/form-data" >
             {% csrf_token %}
 
             <div class="mb-3">
                 <label for="firstname" class="form-label">First Name</label>
-                <input type="text" name="firstName" id="firstname">
+                <input type="text" name="firstName" id="firstname" value="{{ avocat_instance.firstName }}">
             </div>
 
             <div class="mb-3">
                 <label for="lastname" class="form-label">Last Name</label>
-                <input type="text" name="lastName" id="lastname">
+                <input type="text" name="lastName" id="lastname" value="{{ avocat_instance.lastName }}">
             </div>
 
             <div class="mb-3">
                 <label for="adresse" class="form-label">Adresse</label>
-                <input type="text" name="adresse" id="adresse">
+                <input type="text" name="adresse" id="adresse" value="{{ avocat_instance.adresse }}">
             </div>
 
             <div class="mb-3">
                 <label for="email" class="form-label">Email</label>
-                <input type="email" name="email" id="email">
+                <input type="email" name="email" id="email" value="{{ avocat_instance.coordonnees.email}}">
             </div>
             
             <div class="mb-3" id="phoneNumbersContainer">
                 <label for="phoneNumber" class="form-label">Phone Numbers</label>
                 <div id="phoneNumbersWrapper">
-                    <div class="phone-number-input-wrapper">
-                        <input type="tel" name="phoneNumbers[]" class="phone-number-input" required>
-                        <!-- <button type="button" class="remove-phone-number">X</button> -->
-                    </div>
+                    {% for phone_number in avocat_instance.coordonnees.phonenumbers.all %}
+                        <div class="phone-number-input-wrapper">
+                            <input type="tel" name="phoneNumbers[]" class="phone-number-input" value="{{ phone_number.phoneNumber }}" required>
+                            <button type="button" class="remove-phone-number" onclick='removePhoneNumber(this)'>X</button>
+                        </div>
+                    {% endfor %}
                 </div>
                 <button type="button" id="addPhoneNumber" class="add-phone-number">Add Phone Number</button>
             </div>
 
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-    const phoneNumbersContainer = document.getElementById('phoneNumbersContainer');
-    const phoneNumbersWrapper = document.getElementById('phoneNumbersWrapper');
-    const addPhoneNumberButton = document.getElementById('addPhoneNumber');
-
-    addPhoneNumberButton.addEventListener('click', function () {
-        const newInput = document.createElement('input');
-        newInput.type = 'tel';
-        newInput.name = 'phoneNumbers[]';
-        newInput.className = 'phone-number-input';
-        newInput.required = true;
-
-        const removeButton = document.createElement('button');
-        removeButton.type = 'button';
-        removeButton.innerText = 'X';
-        removeButton.className = 'remove-phone-number';
-        removeButton.addEventListener('click', function () {
-            phoneNumbersWrapper.removeChild(newInput);
-            phoneNumbersWrapper.removeChild(removeButton);
-        });
-
-        phoneNumbersWrapper.appendChild(newInput);
-        phoneNumbersWrapper.appendChild(removeButton);
-    });
-});
-</script>
+            <script>
+                document.addEventListener('DOMContentLoaded', function () {
+                    const phoneNumbersContainer = document.getElementById('phoneNumbersContainer');
+                    const phoneNumbersWrapper = document.getElementById('phoneNumbersWrapper');
+                    const addPhoneNumberButton = document.getElementById('addPhoneNumber');
+            
+                    addPhoneNumberButton.addEventListener('click', function () {
+                        const newInput = document.createElement('input');
+                        newInput.type = 'tel';
+                        newInput.name = 'phoneNumbers[]';
+                        newInput.className = 'phone-number-input';
+                        newInput.required = true;
+            
+                        const removeButton = document.createElement('button');
+                        removeButton.type = 'button';
+                        removeButton.innerText = 'X';
+                        removeButton.className = 'remove-phone-number';
+                        removeButton.addEventListener('click', function () {
+                            phoneNumbersWrapper.removeChild(newInput);
+                            phoneNumbersWrapper.removeChild(removeButton);
+                        });
+            
+                        phoneNumbersWrapper.appendChild(newInput);
+                        phoneNumbersWrapper.appendChild(removeButton);
+                    });
+                });
+            
+                function removePhoneNumber(element) {
+                    const phoneNumbersWrapper = document.getElementById('phoneNumbersWrapper');
+                    phoneNumbersWrapper.removeChild(element.previousSibling); // input
+                    phoneNumbersWrapper.removeChild(element); // button
+                }
+              </script>
 
             <div class="mb-3">
                 <label for="experienceWork" class="form-label">Experience Work</label>
-                <input type="date" name="experienceWork" id="experienceWork">
+                <input type="date" name="experienceWork" id="experienceWork" value="{{ avocat_instance.experienceWork }}" required>
             </div>
+            
 
             <div class="mb-3">
                 <h4>Specialities</h4>
                 {% for sp in specialites %}
                 <label class="custom-checkbox">
                     <input type="checkbox" name="{{ sp }}" id="{{ sp }}" class="form-check-input">
+
                     <span class="checkmark"></span>
                     {{ sp }}
                 </label>
                 {% endfor %}
             </div>
-
+            
             <div class="mb-3">
                 <h4>Languages</h4>
                 {% for lan in langues %}
                 <label class="custom-checkbox">
-                    <input type="checkbox" name="{{ lan }}" id="{{ lan }}" class="form-check-input">
+                    <input type="checkbox" name="{{ lan }}" id="{{ lan }}" class="form-check-input" >
                     <span class="checkmark"></span>
                     {{ lan }}
                 </label>
@@ -246,12 +257,16 @@ document.addEventListener('DOMContentLoaded', function () {
             </div>
             <div class="mb-3">
                 <label for="dateWork" class="form-label">Date Work</label>
-                <input type="date" name="dateWork" id="dateWork">
+                <input type="date" name="dateWork" id="dateWork" value="{{ avocat_instance.dateWork }}" required>
             </div>
 
-            <div class="mb-3">
+            <div class= "mb-3" >
                 <label for="timeWork" class="form-label">Time Work</label>
-                <input type="time" name="timeWork" id="timeWork">
+                <input type="time" name="timeWork" id="timeWork" value="{{ avocat_instance.timeWork }}" required>
+            </div>
+            <div class="mb-3">
+                <label for="photo" class="form-label">Image Profile</label>
+                <input type="file" name="photo" id="photo"  >
             </div>
 
             <button type="submit" class="btn btn-primary">{{ action }}</button>

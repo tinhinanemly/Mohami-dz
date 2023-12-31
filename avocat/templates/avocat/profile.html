@@ -107,7 +107,7 @@ h2 {
 
     <section>
         <div class="profile-info">
-            <img src="path/to/avocat/profile/image.jpg" alt="Avocat Image">
+            <img src="{{avocat.photo.url}}" alt="Avocat Image">
             <div class="profile-details">
                 <h2>{{avocat.firstName}} {{avocat.lastName}}</h2>
                 <p>Address: {{avocat.adresse}}</p>
@@ -150,6 +150,61 @@ h2 {
             <!-- Add more experiences as needed -->
         </div>
     </section>
+    <style>
+        /* Add these styles to your CSS file */
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        input[type="text"],
+        textarea {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+            
+    </style>
+    {%if request.user.avocat == avocat %}
+    <section class="post-create">
+        <h2>Create a Post</h2>
+
+        <form method="post" action="{% url 'post_create' avocat.id %}">
+            {% csrf_token %}
+            <div class="form-group">
+                <label for="id_title">Title:</label>
+                {{ form.title }}
+            </div>
+            <div class="form-group">
+                <label for="id_content">Content:</label>
+                {{ form.content }}
+            </div>
+            <button type="submit" class="btn btn-primary">Post</button>
+        </form>
+    </section>
+    {%endif%}
+    
     <section class="posts">
         <h2>Posts</h2>
         {%for post in posts%}
@@ -166,7 +221,7 @@ h2 {
         <h2>Comments</h2>
         {%for comment in comments%}
         <div class="comment">
-            <img src="path/to/commenter/avatar.jpg" alt="Commenter Avatar">
+            <img src="{{comment.host.photo.url}}" alt="Commenter Avatar">
             <div class="comment-content">
                 <h3>{{comment.host.firstName}} {{comment.host.lastName}}</h3>
                 <p>{{comment.content}}</p>
@@ -174,6 +229,21 @@ h2 {
             </div>
         </div>
         {%endfor%}
+        {% if user.is_authenticated %}
+        <div class="comment-form">
+            <h3>Add a Comment</h3>
+            <form method="post" action="{% url 'add_comment' avocat.id %}">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label for="id_content">Your Comment:</label>
+                    <textarea name="content" id="id_content" rows="4" cols="50" required></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary">Post Comment</button>
+            </form>
+        </div>
+    {% else %}
+        <p>Login to add comments.</p>
+    {% endif %}
         </div>
     </section>
 {% endblock content %}
