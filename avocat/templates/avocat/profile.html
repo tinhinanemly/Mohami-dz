@@ -1,4 +1,6 @@
+{% load static %}
 {%extends 'main.html'%}
+{% load static %}
 {%block style%}
 
 <style>
@@ -107,7 +109,9 @@ h2 {
 
     <section>
         <div class="profile-info">
-            <img src="{{avocat.photo.url}}" alt="Avocat Image">
+            <img src="{% if avocat.photo %}{{ avocat.photo.url }}{% else %}{% static 'images/avatar.png' %}{% endif %}" alt="{{ avocat.firstName }}'s profile picture">
+            <!-- <img src="{% static 'images/avatar.png' %}" alt="{{ avocat.firstName }}'s profile picture"> -->
+
             <div class="profile-details">
                 <h2>{{avocat.firstName}} {{avocat.lastName}}</h2>
                 <p>Address: {{avocat.adresse}}</p>
