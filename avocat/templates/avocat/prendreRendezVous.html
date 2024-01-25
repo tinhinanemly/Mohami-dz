@@ -1,0 +1,16 @@
+{% extends "main.html" %}
+{%block content%}
+<h1>Do you want to do a meet with {{avocat.firstName }} {{avocat.lastName }}</h1>
+<form action="{% url 'prendreRendezVous' avocat.id %}" method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    <label for="title">Title</label>
+    <input type="text" name="title" id="title" >
+    <label for="id_content">Cause</label>
+    <textarea name="content" id="id_content" rows="4" cols="50" ></textarea>
+    <label for="dateTime">dateTime</label>
+    <input type="datetime-local" name="dateTime" id="dateTime">
+    <label for="files">Add your Files Here</label>
+    <input type="file" name="files" id="files">
+    <button type="submit" class="btn btn-primary">Post your Rendez-vous</button>
+</form>
+{%endblock content%}

@@ -290,3 +290,36 @@ def delete(request, pk):
     }
     return render(request,'avocat/delete.html', context)
     
+    
+
+def prendreRendezVous(request, avocat_id):
+    avocat = get_object_or_404(Avocat, id=avocat_id)
+
+    if request.method == 'POST' and request.user.is_authenticated:
+        title = request.POST.get('title')
+        content = request.POST.get('content')
+        date_heure = request.POST.get('dateTime')
+        files = request.FILES.get('files')  # Use request.FILES to handle file uploads
+
+        rendezvous = RendezVous.objects.create(
+            avocat=avocat,
+            utilisateur=request.user.visitor,  # Assuming Visitor is related to the User model
+            cause=content,
+            title=title,
+            date_heure=date_heure,
+            statut="pending",
+        )
+
+        # Check if a file was provided before saving it
+        if files:
+            file_instance = Files.objects.create(
+                source=files,
+                rendezvous=rendezvous,
+            )
+            # You might want to do additional processing or validation for the file here
+
+        messages.success(request, "You have scheduled your meeting!")
+        return redirect('home')
+
+    context = {'avocat': avocat}
+    return render(request, "avocat/prendreRendezVous.html", context)

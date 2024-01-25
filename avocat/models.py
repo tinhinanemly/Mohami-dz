@@ -87,7 +87,7 @@ class Files(models.Model):
     rendezvous = models.ForeignKey('RendezVous',null = True, blank=True , on_delete= models.CASCADE)
       
     def __str__(self):
-        return self.id
+        return str(self.id)
 
     class Meta:
         db_table = 'files'
