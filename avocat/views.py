@@ -1,4 +1,6 @@
-from django.shortcuts import render,get_object_or_404, redirect
+from django.shortcuts import render,get_object_or_404, redirect 
+from django.http import HttpResponseRedirect, JsonResponse
+from django.urls import reverse
 from django.contrib import messages
 from django.contrib.auth import authenticate, login , logout
 from django.contrib.auth.decorators import login_required
@@ -9,7 +11,14 @@ from django.contrib.auth.models import User
 from django.contrib.auth.signals import user_logged_in
 from django.dispatch import receiver
 from django.db.models.signals import post_save
-
+from django.core.mail import send_mail
+from django.template.loader import render_to_string
+from django.conf import settings
+from rest_framework import generics
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from .serializers import AvocatSerializer,langueSerializer
+import requests
 
 def home(request):
     # Get search parameters from the request
@@ -39,16 +48,21 @@ def home(request):
 
     # Filter avocats based on the constructed query
     avocats = Avocat.objects.filter(avocats_query).distinct()
+    if request.user.is_authenticated:
+        existing_avocat = Avocat.objects.filter(user=request.user).first()  # Use .first() to get a single instance
+        rv_count = RendezVous.objects.filter(avocat=existing_avocat).exclude(statut="rejecting").count()
+    else:
+        existing_avocat = None
+        rv_count = 0  # Set default count for non-authenticated users
 
-    context = {'avocats': avocats}
+    context = {'avocats': avocats, "existing_avocat":existing_avocat ,'rv_count' :rv_count }
     return render(request, "avocat/home.html", context)
 
 # def loginPage():
     
 def loginPage(request):
-    # if request.user.authenticated 
-
-    #     return redirect('home')
+    # if request.user.authenticated :
+    #     return redirect('home') 
     if request.method == 'POST':
         username = request.POST.get('username')
         password = request.POST.get('password')
@@ -127,6 +141,8 @@ def profile(request,pk):
     phone_numbers = PhoneNumbers.objects.filter(coordonnees=avocat.coordonnees)
     posts = Post.objects.filter(host= avocat).order_by('-dateTimePub')
     comments = Comment.objects.filter(avocat=avocat).order_by('-dateTimePub')
+    rendezVousList = RendezVous.objects.filter(avocat=avocat)
+
     form = PostForm()
     context = {
      'avocat':avocat , 
@@ -136,12 +152,16 @@ def profile(request,pk):
      'posts':posts,
      'comments':comments,
       'form': form,
+      'rendezVousList':rendezVousList ,
      }
     return render(request,'avocat/profile.html',context)
 @login_required(login_url='login')
 
 
 def createAvocatProfile(request):
+    existing_avocat = Avocat.objects.filter(user=request.user)
+    if existing_avocat != None:
+        return redirect("home")
     if request.method == 'POST':
         first_name = request.POST.get('firstName')
         last_name = request.POST.get('lastName')
@@ -289,9 +309,74 @@ def delete(request, pk):
         'obj':avocat,
     }
     return render(request,'avocat/delete.html', context)
-    
+
+from django.contrib import messages
+@login_required(login_url='login')
+def evaluate(request, pk):
+    avocat = get_object_or_404(Avocat, id=pk)
+    if request.method == 'POST' and request.user.is_authenticated:
+        avocat = get_object_or_404(Avocat, id=pk)
+        evaluation_star = int(request.POST.get('evaluationStar'))
+        host = request.user.visitor
+
+        # Check if the visitor has already evaluated the avocat
+        existing_evaluation = evalutationAvocatVisitor.objects.filter(avocat=avocat, host=host).first()
+
+        if existing_evaluation:
+            # Visitor has already evaluated the avocat
+            messages.error(request, 'You have already evaluated this avocat.')
+        else:
+            # Create a new evaluation
+            new_evaluation = evalutationAvocatVisitor(avocat=avocat, host=host, evaluationStar=evaluation_star)
+            new_evaluation.save()
+
+            # Update the avocat's overall evaluationStar (you may need to define a method in your Avocat model to update this)
+            avocat.update_evaluation()
+
+            messages.success(request, 'Evaluation submitted successfully.')
+
+    return redirect('profile', pk=avocat.id)
+
+
     
 
+def listRendezVous(request, avocat_id):
+    avocat = get_object_or_404(Avocat, id=avocat_id)
+    listRendezVous = RendezVous.objects.filter(avocat=avocat).exclude(statut="rejecting").order_by('created')
+
+
+    if request.method == 'POST':
+        rv_id = request.POST.get('rv')
+        statut = request.POST.get('statut')
+
+        if rv_id:
+            rv = get_object_or_404(RendezVous, id=rv_id)
+            
+            # Update the status of the RendezVous object
+            rv.statut = statut
+            rv.save()
+            send_confirmation_email(rv)
+            # Redirect to the same page to avoid form resubmission
+            return HttpResponseRedirect(reverse('ListRendezVous', args=[avocat_id]))
+
+    context = {
+        'listRendezVous': listRendezVous,
+    }
+    return render(request, 'avocat/listRV.html', context)
+
+
+def send_confirmation_email(rv):
+    subject = 'Meeting Request Confirmation'
+    sender_email = settings.EMAIL_HOST_USER  # Replace with your email
+    recipient_email = 'mohamedouaddane48@gmail.com'  # Assuming Visitor has a User field
+
+    # Render the email content using a template
+    message = render_to_string('email/confirm.html', {'rv': rv})
+
+    send_mail(subject, message, sender_email, [recipient_email] ,  fail_silently=False,
+    html_message=message ) 
+    
+@login_required(login_url='login')   
 def prendreRendezVous(request, avocat_id):
     avocat = get_object_or_404(Avocat, id=avocat_id)
 
@@ -317,9 +402,64 @@ def prendreRendezVous(request, avocat_id):
                 rendezvous=rendezvous,
             )
             # You might want to do additional processing or validation for the file here
+        avocat = avocat  # Replace with actual Avocat object
+        visitor = request.user.visitor  # Replace with actual Visitor object
+        rendezvous = rendezvous  # Replace with actual RendezVous object
+
+        # Send email to the lawyer
+        subject = 'Meeting Request Notification'
+        message = render_to_string('email/meeting_request.html', {'avocat': avocat, 'visitor': visitor, 'rendezvous': rendezvous})
+        from_email = settings.EMAIL_HOST_USER   # Update with your email
+        to_email = [avocat.user.email]  # Assuming avocat has a user attribute, update accordingly
+
+        send_mail(
+            subject,
+            '',  # No plain text version, as we're using HTML
+            from_email,
+            to_email,
+            html_message=message,
+        )
 
         messages.success(request, "You have scheduled your meeting!")
         return redirect('home')
 
     context = {'avocat': avocat}
     return render(request, "avocat/prendreRendezVous.html", context)
+
+
+class AvocatListAPIView(generics.ListAPIView):
+    queryset = Avocat.objects.all()
+    serializer_class = AvocatSerializer
+    
+
+def avocatDetails(request, pk):
+    avocat = get_object_or_404(Avocat, id=pk)
+    serializer = AvocatSerializer(avocat)
+    avocat_serialized = serializer.data  # Use serializer.data instead of the serializer object
+    return Response(avocat_serialized, safe=False)
+
+@api_view(['GET','PUT','DELETE'])
+def langues(request,pk):
+    lan = Langues.objects.get(id=pk)
+    if request.method=='GET':
+        serializer  = langueSerializer(lan,many=False)
+        return Response(serializer.data)
+    
+    elif request.method=='PUT':
+        serializer  = langueSerializer(instance=lan, data = request.data)
+        if serializer.is_valid():
+            serializer.save()
+        return Response(serializer.data)
+       
+    elif request.method=='DELETE':
+        lan.delete()
+        return Response("langue is deleted !")
+    
+@api_view(['POST'])
+def addLangues(request):
+    serializer = langueSerializer(data=  request.data)
+    if serializer.is_valid():
+        serializer.save()
+    return Response(serializer.data)
+
+

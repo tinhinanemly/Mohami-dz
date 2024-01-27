@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            color: #333;
+            padding: 20px;
+            margin: 0;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: #3498db;
+            text-align: center;
+        }
+
+        p {
+            font-size: 16px;
+            line-height: 1.5;
+            margin-bottom: 20px;
+        }
+
+        .accepting {
+            color: #28a745;
+        }
+
+        .rejecting {
+            color: #dc3545;
+        }
+
+        .pending {
+            color: #ffc107;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Meeting Request Confirmation</h1>
+        <p>Dear {{ rv.utilisateur.user.username }},</p>
+
+        <p>Your meeting request with {{ rv.avocat.firstName }} {{ rv.avocat.lastName }} has been <span class="{% if rv.statut == 'accepting' %}accepting{% elif rv.statut == 'rejecting' %}rejecting{% else %}pending{% endif %}">{{ rv.statut }}</span>.</p>
+
+        <p>Date and Time: {{ rv.date_heure }}</p>
+
+        <p>Thank you,<br>Your Law Firm</p>
+    </div>
+</body>
+</html>

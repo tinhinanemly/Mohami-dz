@@ -9,9 +9,24 @@
         <h1>Bienvenue sur DZ-Mouhami</h1>
         <p>Votre guide pour trouver des avocats qualifiés en Algérie.</p>
         <div style="margin-bottom: 15px; text-align: center;">
-          <a href="{% url 'createAvovatProfile' %}" style="display: inline-block; padding: 15px 30px; background-color: #007bff; color: #fff; text-decoration: none; font-size: 18px; font-weight: bold; border-radius: 8px; transition: background-color 0.3s ease;">
-              Create Avocat Profile
-          </a>
+            <style>
+                .btn-head{
+                    display: inline-block; padding: 15px 30px; background-color: #007bff; color: #fff; text-decoration: none; font-size: 18px; font-weight: bold; border-radius: 8px; transition: background-color 0.3s ease;
+                }
+            </style>
+            {%if existing_avocat  %}
+            <a href="{% url 'profile' user.avocat.id %} "  class="btn-head" >
+                My Avocat Profile
+            </a>
+           
+            <a href="{% url 'ListRendezVous' user.avocat.id %} " class="btn-head">
+                Mes Demande Rendez vous ({{rv_count}})
+            </a>
+          {% else %} 
+          <a href="{% url 'createAvovatProfile' %}"  class="btn-head">
+            Create Avocat Profile
+         </a>
+          {%endif%}
       </div>
       
          <style>

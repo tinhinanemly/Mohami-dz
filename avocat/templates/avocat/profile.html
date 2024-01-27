@@ -100,6 +100,7 @@ h2 {
     margin-top: 5px;
     color: #888;
 }
+
 </style>
 {%endblock style%}
 {%block title %}
@@ -122,9 +123,22 @@ h2 {
                 {%for phone in phone_numbers%}
                 <p>Phone: {{phone}}</p>
                 {%endfor%}
+                <p>Evaluation: 
+                {{avocat.evaluationStar}}
+                  </p>
+                
+                
+              
             {%if request.user == avocat.user %}
              <a href="{% url 'updateAvocatProfile' avocat.id %}" style="height: 100%; width:max-content ; background:rgb(239, 89, 89) ; border-radius:5%">Update Avocat Profile</a> 
              <a href="{% url 'delete' avocat.id %}" style="height: 100%; width:max-content ; background:rgb(239, 89, 89) ; border-radius:5%">Delete</a> 
+             {%else %}
+             <form action="{%url 'evaluate'  avocat.id  %}" method="post">
+                {%csrf_token%}
+             <label for="evaluationStar">You can Evaluate: </label>
+             <input type="number" name="evaluationStar" id="evaluationStar" min="0" max="5">
+             <input type="submit" value="evaluer">
+            </form>
             {%endif%}
             </div>
 

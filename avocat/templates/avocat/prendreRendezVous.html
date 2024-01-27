@@ -1,16 +1,68 @@
 {% extends "main.html" %}
-{%block content%}
-<h1>Do you want to do a meet with {{avocat.firstName }} {{avocat.lastName }}</h1>
-<form action="{% url 'prendreRendezVous' avocat.id %}" method="post" enctype="multipart/form-data">
-    {% csrf_token %}
-    <label for="title">Title</label>
-    <input type="text" name="title" id="title" >
-    <label for="id_content">Cause</label>
-    <textarea name="content" id="id_content" rows="4" cols="50" ></textarea>
-    <label for="dateTime">dateTime</label>
-    <input type="datetime-local" name="dateTime" id="dateTime">
-    <label for="files">Add your Files Here</label>
-    <input type="file" name="files" id="files">
-    <button type="submit" class="btn btn-primary">Post your Rendez-vous</button>
-</form>
-{%endblock content%}
+{% block content %}
+    <style>
+        body {
+            font-family: 'Arial', sans-serif; /* Change to your preferred font */
+            background-color: #f8f9fa; /* Set a light background color */
+        }
+
+        .card {
+            border: none; /* Remove default card border */
+            border-radius: 10px; /* Add border radius for a rounded appearance */
+        }
+
+        .card-header {
+            border-radius: 10px 10px 0 0; /* Round the top corners of the card header */
+        }
+
+        label {
+            font-weight: bold; /* Make labels bold */
+        }
+
+        .btn-primary {
+            background-color: #007bff; /* Change button color */
+            border-color: #007bff; /* Change button border color */
+        }
+
+        .btn-primary:hover {
+            background-color: #0056b3; /* Change button color on hover */
+            border-color: #0056b3; /* Change button border color on hover */
+        }
+    </style>
+
+    <div class="container mt-5">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h1 clasas="mb-0">Schedule a Meeting with {{ avocat.firstName }} {{ avocat.lastName }}</h1>
+            </div>
+            <div class="card-body">
+                <form action="{% url 'prendreRendezVous' avocat.id %}" method="post" enctype="multipart/form-data" class="col-md-6">
+                    {% csrf_token %}
+
+                    <div class="mb-3">
+                        <label for="title" class="form-label">Title</label>
+                        <input type="text" name="title" id="title" class="form-control" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="id_content" class="form-label">Cause</label>
+                        <textarea name="content" id="id_content" rows="4" cols="50" class="form-control" required></textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="dateTime" class="form-label">Date and Time</label>
+                        <input type="datetime-local" name="dateTime" id="dateTime" class="form-control" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="files" class="form-label">Add your Files Here</label>
+                        <input type="file" name="files" id="files" class="form-control">
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">Schedule Meeting</button>
+                </form>
+            </div>
+        </div>
+    </div>
+{% endblock content %}
+

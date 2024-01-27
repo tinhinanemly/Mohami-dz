@@ -1,0 +1,86 @@
+{% extends "main.html" %}
+{% block style %}
+<style>
+    .rv-card {
+        border: 2px solid #3498db;
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 30px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        transition: box-shadow 0.3s ease-in-out;
+    }
+
+    .rv-card:hover {
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+    }
+
+    .rv-card-title {
+        font-size: 1.8rem;
+        margin-bottom: 15px;
+        color: #3498db;
+    }
+
+    .rv-card-text {
+        margin-bottom: 20px;
+        font-size: 1.2rem;
+    }
+
+    .form-check {
+        margin-bottom: 15px;
+    }
+
+    .form-check-input {
+        margin-right: 10px;
+    }
+
+    .btn-confirm {
+        background-color: #3498db;
+        color: #fff;
+        border: none;
+        border-radius: 5px;
+        padding: 12px 25px;
+        cursor: pointer;
+        font-size: 1.2rem;
+        transition: background-color 0.3s ease-in-out;
+    }
+
+    .btn-confirm:hover {
+        background-color: #2980b9;
+    }
+</style>
+{% endblock style %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row">
+        {% for rv in listRendezVous %}
+        <div class="col-md-6">
+            <div class="rv-card">
+                <h4 class="rv-card-title">{{ rv.title }}</h4>
+                <h4 class="rv-card-text">{{ rv.utilisateur}}</h4>
+                <p class="rv-card-text">{{ rv.cause }}</p>
+                <p class="rv-card-text">Status: {{ rv.statut }}</p>
+                <p class="rv-card-text">Date and Time: {{ rv.date_heure }}</p>
+                <form action="{% url 'ListRendezVous' user.avocat.id %}" method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="rv" value="{{ rv.id }}">
+                    <div class="form-check">
+                        <input type="radio" name="statut" id="statut-pending{{rv.id}}" value="pending" class="form-check-input">
+                        <label for="statut-pending{{rv.id}}" class="form-check-label">Pending</label>
+                    </div>
+                    <div class="form-check">
+                        <input type="radio" name="statut" id="statut-rejecting{{rv.id}}" value="rejecting" class="form-check-input">
+                        <label for="statut-rejecting{{rv.id}}" class="form-check-label">Rejecting</label>
+                    </div>
+                    <div class="form-check">
+                        <input type="radio" name="statut" id="statut-accepting{{rv.id}}" value="accepting" class="form-check-input">
+                        <label for="statut-accepting{{rv.id}}" class="form-check-label">Accepting</label>
+                    </div>
+                    <button type="submit" class="btn btn-confirm">CONFIRM</button>
+                </form>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock content %}

@@ -38,18 +38,30 @@ class Avocat(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     firstName = models.CharField(max_length=100)
     lastName = models.CharField(max_length=100)
-    adresse = models.CharField(max_length=255)
+    adresse = models.CharField(max_length=100)
+    mapsAdr = models.CharField(null=True,default='',max_length=1000)
     coordonnees = models.ForeignKey(Coordonnees, on_delete=models.CASCADE)
     experienceWork = models.DateField(null=True) 
     specialitees = models.ManyToManyField(Specialite, through='AvocatSpecialitePrice', related_name='avocats', blank=True)
     langues = models.ManyToManyField(Langues, blank=True)
     dateWork = models.DateField()
     timeWork = models.TimeField()
-    evaluationStar = models.IntegerField(null=True)
+    
+    evaluationStar = models.IntegerField(null=True , default=0)
     photo = models.ImageField( null=True, blank=True , default='avatar.png')  # Add this line for the photo
 
     def __str__(self):
         return self.firstName
+    def update_evaluation(self):
+       
+        evaluations = evalutationAvocatVisitor.objects.filter(avocat=self)
+        total_evaluations = evaluations.count()
+
+        if total_evaluations > 0:
+            sum_evaluations = evaluations.aggregate(models.Sum('evaluationStar'))['evaluationStar__sum']
+            average_evaluation = sum_evaluations / total_evaluations
+            self.evaluationStar = average_evaluation
+            self.save()
     class Meta:
         db_table = 'avocat'
 
@@ -115,7 +127,7 @@ class RendezVous(models.Model):
         return self.title
     class Meta:
         db_table = 'rendezvous'
-    
+  
  
 
 class Comment(models.Model):
@@ -128,3 +140,12 @@ class Comment(models.Model):
         return self.content[:30]
     class Meta:
         db_table = 'comment'
+
+class evalutationAvocatVisitor(models.Model):
+    avocat = models.ForeignKey(Avocat , on_delete = models.CASCADE)
+    host = models.ForeignKey(Visitor, on_delete=models.CASCADE)
+    evaluationStar = models.IntegerField(null=True)
+    def __str__(self):
+        return str(self.evaluationStar)
+    class Meta:
+        db_table = 'evalutationAvocatVisitor'
