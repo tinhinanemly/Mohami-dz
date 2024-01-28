@@ -17,4 +17,3 @@ admin.site.register(Files)
 admin.site.register(RendezVous)
 admin.site.register(AvocatSpecialitePrice)
 admin.site.register(evalutationAvocatVisitor)
-

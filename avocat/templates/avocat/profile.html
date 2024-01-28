@@ -136,7 +136,9 @@ h2 {
              <form action="{%url 'evaluate'  avocat.id  %}" method="post">
                 {%csrf_token%}
              <label for="evaluationStar">You can Evaluate: </label>
-             <input type="number" name="evaluationStar" id="evaluationStar" min="0" max="5">
+
+             <input type="number" name="evaluationStar" id="evaluationStar" min="0" max="5" required>
+
              <input type="submit" value="evaluer">
             </form>
             {%endif%}
@@ -163,7 +165,14 @@ h2 {
                 {%endfor%}
             </ul>
         </div>
-
+        <div class="Days of Work">
+            <h2>Days of Work</h2>
+                <li>{{daysOfWork}}</li>
+        </div>
+        <div class="Time of works">
+            <h2>Time of Work </h2>
+                <li>From {{timeWorkStart}} To {{timeWorkEnd}}</li>
+        </div>
         <div class="experiences">
             <h2>Experiences</h2>
             <p>Description of experience 1.</p>
@@ -237,7 +246,6 @@ h2 {
 
      {%endfor%}
     </section>
-   
     <section class="comments">
         <h2>Comments</h2>
         {%for comment in comments%}

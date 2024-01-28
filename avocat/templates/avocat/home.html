@@ -72,13 +72,15 @@
     </section>
     <section class="lawyer-profiles">
         <h2>Avocats en Vedette</h2>
-
+        {%if avocats.count == 0 %}
+        <h2>No avocats found</h2>
+        {%else%}
         <div class="profiles-container">
             <!-- Profil Avocat 1 -->
                 {%for avocat in avocats%}
                 <div class="profile-card">
                     <img src="{{avocat.photo.url}}" alt="{{avocat.firstName}}">
-                    <h3>{{avocat.firstName}}{{avocat.lastName}}</h3>
+                    <h3>{{avocat.firstName}} {{avocat.lastName}}</h3>
                     <p>Spécialité: {%for spec in avocat.specialitees.all %} {{spec.title}} {%endfor%} </p>
                     <p>Expérience: {{avocat.experienceWork}}</p>
                     <p>Langues: {%for langue in avocat.langues.all %} {{langue.langue}} {%endfor%} </p>
@@ -91,5 +93,6 @@
                 </div>       
                 {%endfor%}    
         </div>
+        {%endif%}
     </section>
 {%endblock content %}

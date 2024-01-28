@@ -1,5 +1,6 @@
 from django.db import models
-
+from django.contrib import messages
+from django.shortcuts import redirect, render
 from django.db import models
 from django.contrib.auth.models import User
 
@@ -33,25 +34,77 @@ class Experience(models.Model):
         return self.description[:20]
     class Meta:
         db_table = 'experience'
-
+  
 class Avocat(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     firstName = models.CharField(max_length=100)
     lastName = models.CharField(max_length=100)
     adresse = models.CharField(max_length=100)
     mapsAdr = models.CharField(null=True,default='',max_length=1000)
-    coordonnees = models.ForeignKey(Coordonnees, on_delete=models.CASCADE)
+    coordonnees = models.ForeignKey(Coordonnees, on_delete=models.CASCADE , null=True)
     experienceWork = models.DateField(null=True) 
-    specialitees = models.ManyToManyField(Specialite, through='AvocatSpecialitePrice', related_name='avocats', blank=True)
-    langues = models.ManyToManyField(Langues, blank=True)
-    dateWork = models.DateField()
-    timeWork = models.TimeField()
+    specialitees = models.ManyToManyField(Specialite, through='AvocatSpecialitePrice', related_name='avocats', blank=True,null=True)
+    langues = models.ManyToManyField(Langues, blank=True , null=True)
+
+    dateWork = models.CharField(null=True, default='all the days',max_length=200)
+
+    timeWorkStart = models.TimeField(null=True)
+    timeWorkEnd = models.TimeField(null=True)
     
     evaluationStar = models.IntegerField(null=True , default=0)
     photo = models.ImageField( null=True, blank=True , default='avatar.png')  # Add this line for the photo
 
     def __str__(self):
         return self.firstName
+    @classmethod
+    def create_avocat_profile(cls, user, first_name, last_name, adresse, email, phone_numbers, experience_work, date_work, time_work_start,time_work_end, specialities, languages, photo=None):
+        coordonnees = Coordonnees.objects.create(email=email)
+
+        avocat_instance = cls.objects.create(
+            user=user,
+            firstName=first_name,
+            lastName=last_name,
+            adresse=adresse,
+            coordonnees=coordonnees,
+            experienceWork=experience_work,
+            dateWork=date_work,
+            timeWorkStart=time_work_start,
+            timeWorkEnd=time_work_end,
+            evaluationStar=None
+        )
+
+        for phone_number in phone_numbers:
+            PhoneNumbers.objects.create(phoneNumber=phone_number, coordonnees=coordonnees)
+
+        if photo:
+            avocat_instance.photo = photo
+            avocat_instance.save()
+
+        avocat_instance.specialitees.set(Specialite.objects.filter(title__in=specialities))
+        avocat_instance.langues.set(Langues.objects.filter(langue__in=languages))
+
+        return avocat_instance
+    
+    def create_post(self, title, content):
+        post = Post.objects.create(host=self, title=title, content=content)
+        return post
+    
+    def delete_avocat(self, request):
+        if request.method == 'POST':
+            visitor = self.user.visitor
+            visitor.photo = 'visitor.png'
+            visitor.save()
+            self.delete()
+
+            messages.success(request, 'Avocat deleted successfully.')
+
+            return redirect('home')
+
+        context = {
+            'obj': self,
+        }
+        return render(request, 'avocat/delete.html', context)
+
     def update_evaluation(self):
        
         evaluations = evalutationAvocatVisitor.objects.filter(avocat=self)
@@ -64,6 +117,7 @@ class Avocat(models.Model):
             self.save()
     class Meta:
         db_table = 'avocat'
+
 
 
 class AvocatSpecialitePrice(models.Model):
@@ -109,6 +163,14 @@ class Visitor(models.Model):
     firstName = models.CharField(max_length=20)
     lastName = models.CharField(max_length=20,null=True)
     photo = models.ImageField( null=True, blank=True , default='visitor.png' )
+    
+    def add_comment_to_avocat(self, avocat, content):
+        Comment.objects.create(
+            avocat=avocat,
+            host=self,
+            content=content,
+        )
+        
     def __str__(self):
         return self.firstName
     class Meta:
@@ -127,9 +189,7 @@ class RendezVous(models.Model):
         return self.title
     class Meta:
         db_table = 'rendezvous'
-  
- 
-
+        
 class Comment(models.Model):
     avocat = models.ForeignKey(Avocat , on_delete = models.CASCADE)
     host = models.ForeignKey(Visitor, on_delete=models.CASCADE)

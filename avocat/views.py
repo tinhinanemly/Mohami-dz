@@ -58,11 +58,9 @@ def home(request):
     context = {'avocats': avocats, "existing_avocat":existing_avocat ,'rv_count' :rv_count }
     return render(request, "avocat/home.html", context)
 
-# def loginPage():
-    
+
 def loginPage(request):
-    # if request.user.authenticated :
-    #     return redirect('home') 
+
     if request.method == 'POST':
         username = request.POST.get('username')
         password = request.POST.get('password')
@@ -71,14 +69,11 @@ def loginPage(request):
 
         if user is not None:
             login(request, user)
-            return redirect('home')  # Adjust the redirect URL as needed
+            return redirect('home') 
         else:
             messages.error(request, "Invalid username or password.")
     return render(request,'avocat/login.html')
 
-
-from django.contrib.auth import login
-from .models import Visitor  # Assuming Visitor model is in the same app as this view
 
 def signup(request):
     if request.method == 'POST':
@@ -87,34 +82,27 @@ def signup(request):
         confirm_password = request.POST.get('cpassword')
         email = request.POST.get('email')
 
-        # Verify if passwords match
         if password != confirm_password:
             messages.error(request, "Passwords do not match. Please enter them again.")
         else:
-            # Check if the username is already taken
+
             if User.objects.filter(username=username).exists():
                 messages.error(request, "Username is already taken. Please choose a different one.")
             else:
-                # Create the user
                 user = User.objects.create_user(username=username, password=password, email=email)
 
-                # Log in the user
                 login(request, user, backend='django.contrib.auth.backends.ModelBackend')
 
-                return redirect('home')  # Adjust the redirect URL as needed
+                return redirect('home')  
 
     return render(request, 'avocat/signup.html')
 
 
-
-
-# Signal to create Visitor instance after User is saved
 @receiver(post_save, sender=User)
 def create_visitor_for_user(sender, instance, created, **kwargs):
     if created:
-        Visitor.objects.get_or_create(user=instance, defaults={'firstName': instance.username})
+        Visitor.objects.get_or_create(user=instance, defaults={'firstName': instance.username })
 
-# Signal to create Visitor instance when user logs in
 @receiver(user_logged_in)
 def create_visitor_on_login(sender, request, user, **kwargs):
     visitor, created = Visitor.objects.get_or_create(user=user, defaults={'firstName': user.username})
@@ -142,6 +130,9 @@ def profile(request,pk):
     posts = Post.objects.filter(host= avocat).order_by('-dateTimePub')
     comments = Comment.objects.filter(avocat=avocat).order_by('-dateTimePub')
     rendezVousList = RendezVous.objects.filter(avocat=avocat)
+    daysOfWork = avocat.dateWork
+    timeWorkStart = avocat.timeWorkStart
+    timeWorkEnd = avocat.timeWorkEnd
 
     form = PostForm()
     context = {
@@ -153,67 +144,66 @@ def profile(request,pk):
      'comments':comments,
       'form': form,
       'rendezVousList':rendezVousList ,
+      'daysOfWork':daysOfWork ,
+      'timeWorkStart':timeWorkStart,
+      'timeWorkEnd':timeWorkEnd ,
      }
     return render(request,'avocat/profile.html',context)
 @login_required(login_url='login')
 
-
 def createAvocatProfile(request):
     existing_avocat = Avocat.objects.filter(user=request.user)
-    if existing_avocat != None:
+    if existing_avocat.exists():
         return redirect("home")
+
     if request.method == 'POST':
+        # Collect form data
         first_name = request.POST.get('firstName')
         last_name = request.POST.get('lastName')
         adresse = request.POST.get('adresse')
         email = request.POST.get('email')
-        phone_number = request.POST.get('phoneNumber')
+        phone_numbers = request.POST.getlist('phoneNumbers[]')
         experience_work = request.POST.get('experienceWork')
-        date_work = request.POST.get('dateWork')
-        time_work = request.POST.get('timeWork')
-
-        # Process checkboxes for specialities and languages
+        
+        selected_days = request.POST.getlist('day')
+        date_work = ", ".join(selected_days) if selected_days else 'all the days'
+        
+        timeWorkStart = request.POST.get('timeWorkStart')
+        timeWorkEnd=request.POST.get('timeWorkEnd')
+        
         specialities = [key for key in request.POST.keys() if key in [sp.title for sp in Specialite.objects.all()]]
         languages = [key for key in request.POST.keys() if key in [lan.langue for lan in Langues.objects.all()]]
 
-        # Create and save the Avocat instance
-        user = request.user  # Assuming you have a valid User instance in the request
-        coordonnees = Coordonnees.objects.create(email=email)  # Assuming you want to create a new Coordonnees instance
-        phone_numbers = request.POST.getlist('phoneNumbers[]')
-        # Create PhoneNumbers instances for each phone number
-        for phone_number in phone_numbers:
-            PhoneNumbers.objects.create(phoneNumber=phone_number, coordonnees=coordonnees)
-        
-        avocat_instance = Avocat.objects.create(
-            user=user,
-            firstName=first_name,
-            lastName=last_name,
+        # Call the create_avocat_profile method
+        Avocat.create_avocat_profile(
+            user=request.user,
+            first_name=first_name,
+            last_name=last_name,
             adresse=adresse,
-            coordonnees=coordonnees,
-            experienceWork=experience_work,
-            dateWork=date_work,
-            timeWork=time_work,
-            evaluationStar=None  # You might want to adjust this depending on your requirements
+            email=email,
+            phone_numbers=phone_numbers,
+            experience_work=experience_work,
+            date_work=date_work,
+            time_work_start=timeWorkStart,
+            time_work_end=timeWorkEnd,
+            specialities=specialities,
+            languages=languages,
+            photo=request.FILES.get('photo')
         )
-        
-        if 'photo' in request.FILES:
-            avocat_instance.photo = request.FILES['photo']
-            avocat_instance.save()
-            
-        avocat_instance.specialitees.set(Specialite.objects.filter(title__in=specialities))
-        avocat_instance.langues.set(Langues.objects.filter(langue__in=languages))
 
         return redirect('home')  # Redirect to the home page or any other desired page
 
     langues = Langues.objects.all()
     specialites = Specialite.objects.all()
+
+
     context = {
         'action': "CREATE",
         "langues": langues,
         'specialites': specialites,
     }
-    return render(request, 'avocat/create_avocat_profile.html', context)
 
+    return render(request, 'avocat/create_avocat_profile.html', context)
 
 def updateAvocatProfile(request, pk):
     avocat_instance = get_object_or_404(Avocat, id=pk)
@@ -224,32 +214,33 @@ def updateAvocatProfile(request, pk):
         adresse = request.POST.get('adresse')
         email = request.POST.get('email')
         phone_numbers = request.POST.getlist('phoneNumbers[]')
+        
         experience_work = request.POST.get('experienceWork')
-        date_work = request.POST.get('dateWork')
-        time_work = request.POST.get('timeWork')
+        selected_days = request.POST.getlist('day')
+        
+        date_work = ", ".join(selected_days) if selected_days else 'all the days'
+        
+        timeWorkStart = request.POST.get('timeWorkStart')
+        timeWorkEnd=request.POST.get('timeWorkEnd')
 
-        # Process checkboxes for specialities and languages
         specialities = [key for key in request.POST.keys() if key in [sp.title for sp in Specialite.objects.all()]]
         languages = [key for key in request.POST.keys() if key in [lan.langue for lan in Langues.objects.all()]]
 
-        # Update the Avocat instance
         avocat_instance.firstName = first_name
         avocat_instance.lastName = last_name
         avocat_instance.adresse = adresse
         avocat_instance.experienceWork = experience_work
         avocat_instance.dateWork = date_work
-        avocat_instance.timeWork = time_work
+        avocat_instance.timeWorkStart = timeWorkStart
+        avocat_instance.timeWorkEnd = timeWorkEnd
 
-        # Update Coordonnees instance
         avocat_instance.coordonnees.email = email
         avocat_instance.coordonnees.save()
 
-        # Update or create PhoneNumbers instances for each phone number
-        avocat_instance.coordonnees.phonenumbers.all().delete()  # Delete existing phone numbers
+        avocat_instance.coordonnees.phonenumbers.all().delete() 
         for phone_number in phone_numbers:
             PhoneNumbers.objects.create(phoneNumber=phone_number, coordonnees=avocat_instance.coordonnees)
 
-        # Process and save the photo
         if 'photo' in request.FILES:
             avocat_instance.photo = request.FILES['photo']
 
@@ -258,7 +249,7 @@ def updateAvocatProfile(request, pk):
         avocat_instance.specialitees.set(Specialite.objects.filter(title__in=specialities))
         avocat_instance.langues.set(Langues.objects.filter(langue__in=languages))
 
-        return redirect('home')  # Redirect to the home page or any other desired page
+        return redirect('home')  
 
 
     langues = Langues.objects.all()
@@ -270,45 +261,37 @@ def updateAvocatProfile(request, pk):
         'specialites': specialites,
     }
     return render(request, 'avocat/create_avocat_profile.html', context)
+
 def post_create(request, pk):
     avocat = get_object_or_404(Avocat, id=pk)
 
     if request.method == 'POST':
         form = PostForm(request.POST)
         if form.is_valid():
-            post = form.save(commit=False)
-            post.host = avocat
-            post.save()
+            title = form.cleaned_data['title']
+            content = form.cleaned_data['content']
+            
+            avocat.create_post(title=title, content=content)
+
             return redirect('profile', pk=avocat.id)
-    
 
     context = {
         'avocat': avocat,
-       
     }
-
     return render(request, 'avocat/profile.html', context)
+
 def add_comment(request, avocat_id):
     if request.method == 'POST' and request.user.is_authenticated:
         avocat = get_object_or_404(Avocat, id=avocat_id)
         content = request.POST.get('content')
+        request.user.visitor.add_comment_to_avocat(avocat=avocat, content=content)
 
-        Comment.objects.create(
-            avocat=avocat,
-            host=request.user.visitor  ,  # Assuming Visitor is related to the User model
-            content=content,
-        )
+    return redirect('profile', pk=avocat.id)
 
-    return redirect('profile', pk = avocat.id)
 def delete(request, pk):
     avocat = Avocat.objects.get(id=pk)
-    if request.method=='POST':
-        avocat.delete()
-        return redirect('home')
-    context={
-        'obj':avocat,
-    }
-    return render(request,'avocat/delete.html', context)
+    return avocat.delete_avocat(request)
+
 
 from django.contrib import messages
 @login_required(login_url='login')
@@ -319,18 +302,14 @@ def evaluate(request, pk):
         evaluation_star = int(request.POST.get('evaluationStar'))
         host = request.user.visitor
 
-        # Check if the visitor has already evaluated the avocat
         existing_evaluation = evalutationAvocatVisitor.objects.filter(avocat=avocat, host=host).first()
 
         if existing_evaluation:
-            # Visitor has already evaluated the avocat
             messages.error(request, 'You have already evaluated this avocat.')
         else:
-            # Create a new evaluation
             new_evaluation = evalutationAvocatVisitor(avocat=avocat, host=host, evaluationStar=evaluation_star)
             new_evaluation.save()
-
-            # Update the avocat's overall evaluationStar (you may need to define a method in your Avocat model to update this)
+            
             avocat.update_evaluation()
 
             messages.success(request, 'Evaluation submitted successfully.')
@@ -343,7 +322,6 @@ def evaluate(request, pk):
 def listRendezVous(request, avocat_id):
     avocat = get_object_or_404(Avocat, id=avocat_id)
     listRendezVous = RendezVous.objects.filter(avocat=avocat).exclude(statut="rejecting").order_by('created')
-
 
     if request.method == 'POST':
         rv_id = request.POST.get('rv')
@@ -367,10 +345,10 @@ def listRendezVous(request, avocat_id):
 
 def send_confirmation_email(rv):
     subject = 'Meeting Request Confirmation'
-    sender_email = settings.EMAIL_HOST_USER  # Replace with your email
-    recipient_email = 'mohamedouaddane48@gmail.com'  # Assuming Visitor has a User field
+    sender_email = settings.EMAIL_HOST_USER  
+    recipient_email = 'mohamedouaddane48@gmail.com'  
 
-    # Render the email content using a template
+
     message = render_to_string('email/confirm.html', {'rv': rv})
 
     send_mail(subject, message, sender_email, [recipient_email] ,  fail_silently=False,
@@ -395,26 +373,24 @@ def prendreRendezVous(request, avocat_id):
             statut="pending",
         )
 
-        # Check if a file was provided before saving it
         if files:
             file_instance = Files.objects.create(
                 source=files,
                 rendezvous=rendezvous,
             )
-            # You might want to do additional processing or validation for the file here
-        avocat = avocat  # Replace with actual Avocat object
-        visitor = request.user.visitor  # Replace with actual Visitor object
-        rendezvous = rendezvous  # Replace with actual RendezVous object
 
-        # Send email to the lawyer
+        avocat = avocat  
+        visitor = request.user.visitor 
+        rendezvous = rendezvous  
+
         subject = 'Meeting Request Notification'
         message = render_to_string('email/meeting_request.html', {'avocat': avocat, 'visitor': visitor, 'rendezvous': rendezvous})
-        from_email = settings.EMAIL_HOST_USER   # Update with your email
-        to_email = [avocat.user.email]  # Assuming avocat has a user attribute, update accordingly
+        from_email = settings.EMAIL_HOST_USER   
+        to_email = [avocat.user.email] 
 
         send_mail(
             subject,
-            '',  # No plain text version, as we're using HTML
+            '', 
             from_email,
             to_email,
             html_message=message,
@@ -461,5 +437,3 @@ def addLangues(request):
     if serializer.is_valid():
         serializer.save()
     return Response(serializer.data)
-
-
