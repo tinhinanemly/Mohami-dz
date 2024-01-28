@@ -362,7 +362,7 @@ def prendreRendezVous(request, avocat_id):
         title = request.POST.get('title')
         content = request.POST.get('content')
         date_heure = request.POST.get('dateTime')
-        files = request.FILES.get('files')  # Use request.FILES to handle file uploads
+        files = request.FILES.get('files')  
 
         rendezvous = RendezVous.objects.create(
             avocat=avocat,
