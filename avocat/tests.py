@@ -10,7 +10,6 @@ from django.core import mail
 
 class HomeViewTest(TestCase):
     def setUp(self):
-        # Create test data for avocats
         self.specialite = Specialite.objects.create(title='Criminal Law')
         self.langue = Langues.objects.create(langue='English')
         self.coordonnees = Coordonnees.objects.create(email='avocat@example.com')
@@ -236,7 +235,6 @@ class AvocatModelTest(TestCase):
 
             self.assertContains(response, 'Avocat deleted successfully.')
 
-
 class EvaluateViewTest(TestCase):
     def setUp(self):
         # Create a test user
@@ -302,7 +300,6 @@ class EvaluateViewTest(TestCase):
 
         self.assertFalse(evalutationAvocatVisitor.objects.filter(avocat=self.avocat, host=self.user.visitor).exists())
 
-
 class ListRendezVousViewTest(TestCase):
     def setUp(self):
         self.user = User.objects.create_user(username='testuser', password='testpassword')
@@ -358,7 +355,6 @@ class ListRendezVousViewTest(TestCase):
         self.rendezvous.refresh_from_db()
         self.assertEqual(self.rendezvous.statut, 'confirmed')
         self.assertRedirects(response, reverse('ListRendezVous', args=[self.avocat.id]))
-
 
 class PrendreRendezVousViewTest(TestCase):
     def setUp(self):
@@ -418,8 +414,6 @@ class PrendreRendezVousViewTest(TestCase):
         # self.assertIn('You have scheduled your meeting!', sent_email.body)
 
         self.assertRedirects(response, reverse('home'))
-
-
 
 class VisitorModelTest(TestCase):
         def setUp(self):

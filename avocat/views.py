@@ -14,29 +14,24 @@ from django.db.models.signals import post_save
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
 from django.conf import settings
-from rest_framework import generics
+from rest_framework import generics , status
+from rest_framework.authtoken.models import Token  
+from rest_framework.views import APIView
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from .serializers import AvocatSerializer,langueSerializer
-import requests
+from .serializers import *
 
 def home(request):
-    # Get search parameters from the request
+
     name = request.GET.get('name', '')
     specialite = request.GET.get('specialite', '')
     location = request.GET.get('location', '')
 
-    # Start with an empty query
     avocats_query = Q()
-    # Split the name into first name and last name
     name_parts = name.split()
-
-    # Add conditions to the query based on provided parameters
     if name:
-        # Match each part of the name independently
         for part in name_parts:
             avocats_query |= Q(firstName__icontains=part) | Q(lastName__icontains=part)
-    # Add conditions to the query based on provided parameters
     if name:
         avocats_query |= Q(firstName__icontains=name) | Q(lastName__icontains=name)
 
@@ -46,21 +41,62 @@ def home(request):
     if location:
         avocats_query &= Q(adresse__icontains=location)
 
-    # Filter avocats based on the constructed query
     avocats = Avocat.objects.filter(avocats_query).distinct()
     if request.user.is_authenticated:
         existing_avocat = Avocat.objects.filter(user=request.user).first()  # Use .first() to get a single instance
         rv_count = RendezVous.objects.filter(avocat=existing_avocat).exclude(statut="rejecting").count()
     else:
         existing_avocat = None
-        rv_count = 0  # Set default count for non-authenticated users
+        rv_count = 0  
 
     context = {'avocats': avocats, "existing_avocat":existing_avocat ,'rv_count' :rv_count }
     return render(request, "avocat/home.html", context)
 
+@api_view(['GET'])
+def home_api(request):
+    name = request.GET.get('name', '')
+    specialite = request.GET.get('specialite', '')
+    location = request.GET.get('location', '')
+
+    avocats_query = Q()
+    name_parts = name.split()
+
+    if name:
+        for part in name_parts:
+            avocats_query |= Q(firstName__icontains=part) | Q(lastName__icontains=part)
+    if name:
+        avocats_query |= Q(firstName__icontains=name) | Q(lastName__icontains=name)
+
+    if specialite:
+        avocats_query &= Q(specialitees__title__icontains=specialite)
+
+    if location:
+        avocats_query &= Q(adresse__icontains=location)
+
+    avocats = Avocat.objects.filter(avocats_query).distinct()
+
+    existAvSerial = None  
+    if request.user.is_authenticated:
+        existing_avocat = Avocat.objects.filter(user=request.user).first()
+        existAvSerial = AvocatSerializer(existing_avocat)
+
+    rv_count = 0
+    if existAvSerial:
+        rv_count = RendezVous.objects.filter(avocat=existing_avocat).exclude(statut="rejecting").count()
+
+    serializer = AvocatSerializer(avocats, many=True)
+
+    response_data = {
+        'avocats': serializer.data,
+        'existing_avocat': existAvSerial.data if existAvSerial else None ,
+        'rv_count': rv_count,
+    }
+
+    return Response(response_data, status=status.HTTP_200_OK)
+
+
 
 def loginPage(request):
-
     if request.method == 'POST':
         username = request.POST.get('username')
         password = request.POST.get('password')
@@ -74,6 +110,19 @@ def loginPage(request):
             messages.error(request, "Invalid username or password.")
     return render(request,'avocat/login.html')
 
+class LoginAPI(APIView):
+    def post(self, request):
+        username = request.data.get('username')
+        password = request.data.get('password')
+        print(request)
+        user = authenticate(request, username=username, password=password)
+
+        if user is not None:
+            login(request, user)
+            token, created = Token.objects.get_or_create(user=user)
+            return Response({'token': token.key}, status=status.HTTP_200_OK)
+        else:
+            return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
 
 def signup(request):
     if request.method == 'POST':
@@ -386,7 +435,7 @@ def prendreRendezVous(request, avocat_id):
         subject = 'Meeting Request Notification'
         message = render_to_string('email/meeting_request.html', {'avocat': avocat, 'visitor': visitor, 'rendezvous': rendezvous})
         from_email = settings.EMAIL_HOST_USER   
-        to_email = [avocat.user.email] 
+        to_email = ["androandrobiert@gmail.com"] 
 
         send_mail(
             subject,
@@ -414,6 +463,64 @@ def avocatDetails(request, pk):
     avocat_serialized = serializer.data  # Use serializer.data instead of the serializer object
     return Response(avocat_serialized, safe=False)
 
+
+@api_view(['POST'])
+def add_Rendez_Vous(request,avocat_id):
+    avocat = get_object_or_404(Avocat, id=avocat_id)
+    serializerRv = RendezVousSerializer(data=request.data) 
+    
+    if request.method == 'POST' and request.user.is_authenticated:
+        title = request.POST.get('title')
+        content = request.POST.get('content')
+        date_heure = request.POST.get('dateTime')
+        files = request.FILES.get('files')  
+
+        rendezvous = RendezVous.objects.create(
+            avocat=avocat,
+            utilisateur=request.user.visitor,  # Assuming Visitor is related to the User model
+            cause=content,
+            title=title,
+            date_heure=date_heure,
+            statut="pending",
+        )
+
+        if files:
+            file_instance = Files.objects.create(
+                source=files,
+                rendezvous=rendezvous,
+            )
+
+        avocat = avocat  
+        visitor = request.user.visitor 
+        rendezvous = rendezvous  
+
+        subject = 'Meeting Request Notification'
+        message = render_to_string('email/meeting_request.html', {'avocat': avocat, 'visitor': visitor, 'rendezvous': rendezvous})
+        from_email = settings.EMAIL_HOST_USER   
+        to_email = ["androandrobiert@gmail.com"] 
+
+        send_mail(
+            subject,
+            '', 
+            from_email,
+            to_email,
+            html_message=message,
+        )
+
+        messages.success(request, "You have scheduled your meeting!")
+        
+        return redirect('home')
+
+    context = {'avocat': avocat}
+    return render(request, "avocat/prendreRendezVous.html", context)    
+     
+@api_view(['POST'])
+def addLangues(request):
+    serializer = langueSerializer(data= request.data)
+    if serializer.is_valid():
+        serializer.save()
+    return Response(serializer.data)
+
 @api_view(['GET','PUT','DELETE'])
 def langues(request,pk):
     lan = Langues.objects.get(id=pk)
@@ -430,10 +537,3 @@ def langues(request,pk):
     elif request.method=='DELETE':
         lan.delete()
         return Response("langue is deleted !")
-    
-@api_view(['POST'])
-def addLangues(request):
-    serializer = langueSerializer(data=  request.data)
-    if serializer.is_valid():
-        serializer.save()
-    return Response(serializer.data)

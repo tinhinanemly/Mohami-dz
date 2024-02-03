@@ -7,6 +7,11 @@ class AvocatSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
+class RendezVousSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Avocat
+        fields = '__all__'
+
 class langueSerializer(serializers.ModelSerializer):
     class Meta:
         model = Langues
