@@ -147,6 +147,32 @@ def signup(request):
     return render(request, 'avocat/signup.html')
 
 
+
+
+
+@api_view(['POST'])
+def signup_api(request):
+    if request.method == 'POST':
+        username = request.data.get('username').lower()
+        password = request.data.get('password')
+        confirm_password = request.data.get('cpassword')
+        email = request.data.get('email')
+
+        if password != confirm_password:
+            return Response({'error': "Passwords do not match. Please enter them again."}, status=status.HTTP_400_BAD_REQUEST)
+
+        if User.objects.filter(username=username).exists():
+            return Response({'error': "Username is already taken. Please choose a different one."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        user = User.objects.create_user(username=username, password=password, email=email)
+        login(request, user, backend='django.contrib.auth.backends.ModelBackend')
+        user_serializer = UserSerializer(user)  
+
+        return Response({'user': user_serializer.data}, status=status.HTTP_201_CREATED)
+
+    return Response({'error': "Invalid request method"}, status=status.HTTP_400_BAD_REQUEST)
+
+
 @receiver(post_save, sender=User)
 def create_visitor_for_user(sender, instance, created, **kwargs):
     if created:
@@ -171,6 +197,8 @@ def create_visitor_on_login(sender, request, user, **kwargs):
 def logoutUser(request):
     logout(request)
     return redirect('home') 
+
+
 def profile(request,pk):
     avocat = get_object_or_404(Avocat, id=pk)
     specialitees =avocat.specialitees.all()
@@ -198,8 +226,45 @@ def profile(request,pk):
       'timeWorkEnd':timeWorkEnd ,
      }
     return render(request,'avocat/profile.html',context)
-@login_required(login_url='login')
 
+@api_view(['GET'])
+def profile_api(request, pk):
+    avocat = get_object_or_404(Avocat, id=pk)
+    specialitees = avocat.specialitees.all()
+    langues = avocat.langues.all()
+    phone_numbers = PhoneNumbers.objects.filter(coordonnees=avocat.coordonnees)
+    posts = Post.objects.filter(host=avocat).order_by('-dateTimePub')
+    comments = Comment.objects.filter(avocat=avocat).order_by('-dateTimePub')
+    rendezVousList = RendezVous.objects.filter(avocat=avocat)
+    daysOfWork = avocat.dateWork
+    timeWorkStart = avocat.timeWorkStart
+    timeWorkEnd = avocat.timeWorkEnd
+
+    avocat_serializer = AvocatSerializer(avocat)
+    specialitees_serializer = SpecialiteSerializer(specialitees, many=True) 
+    langues_serializer = langueSerializer(langues, many=True)  
+    phone_numbers_serializer = PhoneNumberSerializer(phone_numbers, many=True)
+    posts_serializer = PostSerializer(posts, many=True)
+    comments_serializer = CommentSerializer(comments, many=True)
+    rendezVous_serializer = RendezVousSerializer(rendezVousList, many=True)
+
+    response_data = {
+        'avocat': avocat_serializer.data,
+        'specialitees': specialitees_serializer.data,
+        'langues': langues_serializer.data,
+        'phone_numbers': phone_numbers_serializer.data,
+        'posts': posts_serializer.data,
+        'comments': comments_serializer.data,
+        'rendezVousList': rendezVous_serializer.data,
+        'daysOfWork': daysOfWork,
+        'timeWorkStart': timeWorkStart,
+        'timeWorkEnd': timeWorkEnd,
+    }
+
+    return Response(response_data, status=status.HTTP_200_OK)
+
+
+@login_required(login_url='login')
 def createAvocatProfile(request):
     existing_avocat = Avocat.objects.filter(user=request.user)
     if existing_avocat.exists():
@@ -464,56 +529,31 @@ def avocatDetails(request, pk):
     return Response(avocat_serialized, safe=False)
 
 
+
 @api_view(['POST'])
-def add_Rendez_Vous(request,avocat_id):
+@login_required
+def add_Rendez_Vous_api(request, avocat_id):
     avocat = get_object_or_404(Avocat, id=avocat_id)
-    serializerRv = RendezVousSerializer(data=request.data) 
+    serializerRv = RendezVousSerializer(data=request.data)
     
-    if request.method == 'POST' and request.user.is_authenticated:
-        title = request.POST.get('title')
-        content = request.POST.get('content')
-        date_heure = request.POST.get('dateTime')
-        files = request.FILES.get('files')  
+    if serializerRv.is_valid():
+        title = serializerRv.validated_data.get('title')
+        cause = serializerRv.validated_data.get('cause')
+        date_heure = serializerRv.validated_data.get('date_heure')
 
         rendezvous = RendezVous.objects.create(
             avocat=avocat,
-            utilisateur=request.user.visitor,  # Assuming Visitor is related to the User model
-            cause=content,
+            utilisateur=request.user.visitor,
+            cause=cause,
             title=title,
             date_heure=date_heure,
             statut="pending",
         )
 
-        if files:
-            file_instance = Files.objects.create(
-                source=files,
-                rendezvous=rendezvous,
-            )
+        return Response({'message': "You have scheduled your meeting!"}, status=status.HTTP_201_CREATED)
 
-        avocat = avocat  
-        visitor = request.user.visitor 
-        rendezvous = rendezvous  
-
-        subject = 'Meeting Request Notification'
-        message = render_to_string('email/meeting_request.html', {'avocat': avocat, 'visitor': visitor, 'rendezvous': rendezvous})
-        from_email = settings.EMAIL_HOST_USER   
-        to_email = ["androandrobiert@gmail.com"] 
-
-        send_mail(
-            subject,
-            '', 
-            from_email,
-            to_email,
-            html_message=message,
-        )
-
-        messages.success(request, "You have scheduled your meeting!")
-        
-        return redirect('home')
-
-    context = {'avocat': avocat}
-    return render(request, "avocat/prendreRendezVous.html", context)    
-     
+    return Response({'error': "Invalid data"}, status=status.HTTP_400_BAD_REQUEST)
+   
 @api_view(['POST'])
 def addLangues(request):
     serializer = langueSerializer(data= request.data)
